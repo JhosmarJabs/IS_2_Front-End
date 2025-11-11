@@ -1,0 +1,5 @@
+{
+  "name": "Copy of Módulo de Autenticación de Usuarios con React",
+  "description": "Un frontend completo para autenticación de usuarios construido con React y Tailwind CSS. Incluye registro, inicio de sesión multi-factor, enlaces mágicos, OAuth de Google y funcionalidades de reseteo de contraseña, diseñado para funcionar con una API de backend preexistente.",
+  "requestFramePermissions": []
+}
