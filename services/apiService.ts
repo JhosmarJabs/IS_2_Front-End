@@ -1,6 +1,6 @@
 import { User, AuthTokens, PrevalidateResponse, VerificationPurpose } from '../types';
 
-const API_BASE_URL = 'http://72.60.70.123:7256/api/auth';
+const API_BASE_URL = 'https://is-2-back-end.onrender.com/api/auth';
 
 
 interface StoredTokens {
