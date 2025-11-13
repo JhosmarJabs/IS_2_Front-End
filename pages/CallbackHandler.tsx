@@ -4,6 +4,7 @@ import * as api from '../services/apiService';
 import { useAuth } from '../context/AuthContext';
 import Spinner from '../components/common/Spinner';
 import Alert from '../components/common/Alert';
+import { AuthTokens } from '../types';
 
 const CallbackHandler: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -14,8 +15,22 @@ const CallbackHandler: React.FC = () => {
   useEffect(() => {
     const handleLogin = async () => {
       const magicToken = searchParams.get('token');
+      const accessToken = searchParams.get('accessToken');
+      const refreshToken = searchParams.get('refreshToken');
+      const expiresAt = searchParams.get('expiresAt') || '';
 
-      if (magicToken) {
+      if (accessToken && refreshToken) {
+        // Nuevo flujo: los tokens están directamente en la URL
+        try {
+          const tokens: AuthTokens = { accessToken, refreshToken, expiresAt };
+          const { user } = api.createSessionFromTokens(tokens);
+          login(tokens, user);
+          navigate('/welcome', { state: { name: user.nombre } });
+        } catch (err: any) {
+          setError('Sesión inválida o token expirado. Por favor, inténtalo de nuevo.');
+        }
+      } else if (magicToken) {
+        // Flujo existente: intercambiar magic token por JWTs
         try {
           const { tokens, user } = await api.loginWithMagicLink(magicToken);
           login(tokens, user);

@@ -128,7 +128,7 @@ const mapJwtClaimsToUser = (claims: any): User | null => {
 }
 
 
-const createSessionFromTokens = (tokens: AuthTokens): { tokens: AuthTokens, user: User } => {
+export const createSessionFromTokens = (tokens: AuthTokens): { tokens: AuthTokens, user: User } => {
     if (!tokens?.accessToken) {
         throw new Error("La respuesta de la API no incluyó un token de acceso.");
     }
