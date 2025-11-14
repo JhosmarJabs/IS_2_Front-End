@@ -20,6 +20,7 @@ const ForgotPasswordPage: React.FC = () => {
     setError('');
     try {
       await api.requestPasswordReset(email);
+      localStorage.setItem('passwordResetEmail', email);
       navigate('/check-email', { state: { message: "Si existe una cuenta con ese correo, hemos enviado instrucciones para restablecer tu contraseña." } });
     } catch (err: any) {
       // Show generic message for security reasons

@@ -18,22 +18,25 @@ const ResetPasswordPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   
   const token = searchParams.get('token');
-  const email = searchParams.get('email');
+  const email = localStorage.getItem('passwordResetEmail');
 
   useEffect(() => {
-    if (!token || !email) {
+    if (!token) {
       setError('Enlace de restablecimiento de contraseña inválido. Por favor, solicita uno nuevo.');
+    } else if (!email) {
+      setError('No se ha encontrado el correo electrónico asociado. Por favor, vuelve a solicitar el restablecimiento de contraseña.');
     }
   }, [token, email]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (newPassword !== confirmPassword) {
       setError('Las contraseñas no coinciden.');
       return;
     }
     if (!token || !email) {
-      setError('Falta el token o el correo. Por favor, utiliza el enlace de tu correo electrónico.');
+      setError('Información incompleta. Por favor, inicia el proceso de nuevo desde la página de olvido de contraseña.');
       return;
     }
     setIsLoading(true);
@@ -42,6 +45,7 @@ const ResetPasswordPage: React.FC = () => {
     try {
       await api.resetPassword({ email, token, newPassword });
       setSuccess('¡Contraseña restablecida con éxito! Redirigiendo al inicio de sesión...');
+      localStorage.removeItem('passwordResetEmail'); // Clean up
       setTimeout(() => navigate('/login'), 3000);
     } catch (err: any) {
       setError(err.message || 'No se pudo restablecer la contraseña. El enlace puede haber expirado.');
@@ -49,6 +53,8 @@ const ResetPasswordPage: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  const isFormDisabled = !!success || !token || !email;
 
   return (
     <AuthLayout title="Nueva Contraseña">
@@ -64,7 +70,7 @@ const ResetPasswordPage: React.FC = () => {
           onChange={e => setNewPassword(e.target.value)} 
           required 
           autoComplete="new-password"
-          disabled={!!success || !token || !email}
+          disabled={isFormDisabled}
         />
         <Input 
           placeholder="Confirmar Nueva Contraseña"
@@ -74,10 +80,10 @@ const ResetPasswordPage: React.FC = () => {
           onChange={e => setConfirmPassword(e.target.value)} 
           required 
           autoComplete="new-password"
-          disabled={!!success || !token || !email}
+          disabled={isFormDisabled}
         />
         
-        <Button type="submit" isLoading={isLoading} fullWidth disabled={!!success || !token || !email}>
+        <Button type="submit" isLoading={isLoading} fullWidth disabled={isFormDisabled}>
             Restablecer Contraseña
         </Button>
       </form>

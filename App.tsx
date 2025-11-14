@@ -47,7 +47,9 @@ const AppRoutes: React.FC = () => {
             <Route path="/verify" element={<VerifyPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/auth/reset" element={<ResetPasswordPage />} />
             <Route path="/auth/callback" element={<CallbackHandler />} />
+            <Route path="/auth/magic" element={<CallbackHandler />} />
             <Route path="/check-email" element={<EmailCheckPage />} />
             <Route
                 path="/welcome"
