@@ -80,6 +80,7 @@ const decodeJwt = (token: string): any | null => {
 
 const mapJwtClaimsToUser = (claims: any): User | null => {
     if (!claims) return null;
+    console.log(claims);
 
     // Mapeo de claims del backend .NET
     const userId = claims["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"]
