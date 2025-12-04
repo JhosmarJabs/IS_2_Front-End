@@ -50,19 +50,21 @@ const VerifyPage: React.FC = () => {
     } catch (err: any) {
       setError(err.message || 'No se pudo reenviar el código.');
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
 
   return (
     <AuthLayout title="Verifica tu Cuenta">
-        <div className="text-center text-slate-300 mb-6">
-            <p>Hemos enviado un código de 6 dígitos a <strong>{email}</strong>.</p>
-            <p>Ingrésalo para activar tu cuenta.</p>
-        </div>
+      <div className="text-center text-slate-300 mb-6">
+        <p>Hemos enviado un código de 6 dígitos a <strong>{email}</strong>.</p>
+        <p>Ingrésalo para activar tu cuenta.</p>
+      </div>
+      
       <form onSubmit={handleSubmit} className="space-y-6">
         {error && <Alert message={error} type="error" />}
         {success && <Alert message={success} type="success" />}
+        
         <Input 
           placeholder="Código de Verificación"
           id="token" 
@@ -71,13 +73,21 @@ const VerifyPage: React.FC = () => {
           required 
           inputMode="numeric"
           maxLength={6}
-          />
-        <Button type="submit" isLoading={isLoading} fullWidth>Verificar Cuenta</Button>
+        />
+        
+        <Button type="submit" isLoading={isLoading} fullWidth>
+          Verificar Cuenta
+        </Button>
       </form>
-       <div className="mt-4 text-center text-sm">
+      
+      <div className="mt-4 text-center text-sm">
         <p className="text-slate-300">¿No recibiste el código?</p>
-        <button onClick={handleResend} disabled={isLoading} className="mt-2 font-medium text-sky-400 hover:text-sky-300 disabled:opacity-50">
-            Reenviar Código
+        <button 
+          onClick={handleResend} 
+          disabled={isLoading} 
+          className="mt-2 font-medium text-sky-400 hover:text-sky-300 disabled:opacity-50"
+        >
+          Reenviar Código
         </button>
       </div>
     </AuthLayout>

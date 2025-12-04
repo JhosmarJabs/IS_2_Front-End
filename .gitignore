@@ -24,3 +24,10 @@ dist-ssr
 *.sw?
 
 .env
+# .gitignore
+ssl/
+*.pem
+*.key
+*.crt
+*.pfx
+

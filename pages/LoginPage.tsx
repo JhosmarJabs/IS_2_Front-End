@@ -30,10 +30,13 @@ const LoginPage: React.FC = () => {
     try {
       const data = await api.prevalidate(email);
       setPrevalidateData(data);
+      
       if (data.emailExists && data.canLogin && data.availableLoginMethods.includes('password')) {
         setView('password');
       } else if (!data.emailExists) {
         setError('No se encontró una cuenta con este correo. Por favor, regístrate.');
+      } else if (!data.isVerified) {
+        setError('Tu cuenta no ha sido verificada. Por favor, revisa tu correo electrónico.');
       } else {
         setError('El inicio de sesión con contraseña no está disponible para esta cuenta.');
       }
@@ -49,13 +52,28 @@ const LoginPage: React.FC = () => {
     setIsLoading(true);
     setError('');
     try {
-      if (prevalidateData?.availableLoginMethods.includes('otp')) {
-        await api.requestOtpFor2FA({ email, password });
-        setView('otp');
-      } else {
+      // Primero intentamos login directo (sin MFA)
+      try {
         const { tokens, user } = await api.loginWithPassword({ email, password });
         login(tokens, user);
         navigate('/welcome', { state: { name: user.nombre } });
+        return;
+      } catch (loginError: any) {
+        // Si falla, verificamos si es porque requiere OTP
+        if (prevalidateData?.availableLoginMethods.includes('otp')) {
+          // Solicitar OTP
+          try {
+            await api.requestOtpFor2FA({ email, password });
+            setView('otp');
+            return;
+          } catch (otpError: any) {
+            // Si también falla al solicitar OTP, mostramos el error original
+            throw loginError;
+          }
+        } else {
+          // Si no tiene OTP disponible, mostramos el error
+          throw loginError;
+        }
       }
     } catch (err: any) {
       setError(err.message || 'Credenciales inválidas.');
@@ -94,25 +112,59 @@ const LoginPage: React.FC = () => {
 
   const renderEmailForm = () => (
     <form onSubmit={handleEmailSubmit} className="space-y-6">
-      <Input placeholder="Correo Electrónico" id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required autoComplete="email" />
+      <Input 
+        placeholder="Correo Electrónico" 
+        id="email" 
+        type="email" 
+        value={email} 
+        onChange={e => setEmail(e.target.value)} 
+        required 
+        autoComplete="email" 
+      />
       <Button type="submit" isLoading={isLoading} fullWidth>Continuar</Button>
     </form>
   );
 
   const renderPasswordForm = () => (
     <form onSubmit={handlePasswordSubmit} className="space-y-6">
-       <div className="text-sm text-center text-slate-300">
-          Iniciando sesión como <strong>{email}</strong>. <button type="button" onClick={() => { setView('email'); setError('')}} className="font-medium text-sky-400 hover:text-sky-300">¿No eres tú?</button>
-        </div>
-      <Input placeholder="Contraseña" id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required autoComplete="current-password" />
-       <div className="text-center">
-            <Link to="/forgot-password" state={{email}} className="text-sm font-medium text-sky-400 hover:text-sky-300">
-                ¿Olvidaste tu contraseña?
-            </Link>
-        </div>
-      <Button type="submit" isLoading={isLoading} fullWidth>Iniciar Sesión</Button>
+      <div className="text-sm text-center text-slate-300">
+        Iniciando sesión como <strong>{email}</strong>. 
+        <button 
+          type="button" 
+          onClick={() => { setView('email'); setError(''); }} 
+          className="font-medium text-sky-400 hover:text-sky-300 ml-1"
+        >
+          ¿No eres tú?
+        </button>
+      </div>
+      <Input 
+        placeholder="Contraseña" 
+        id="password" 
+        type="password" 
+        value={password} 
+        onChange={e => setPassword(e.target.value)} 
+        required 
+        autoComplete="current-password" 
+      />
+      <div className="text-center">
+        <Link 
+          to="/forgot-password" 
+          state={{email}} 
+          className="text-sm font-medium text-sky-400 hover:text-sky-300"
+        >
+          ¿Olvidaste tu contraseña?
+        </Link>
+      </div>
+      <Button type="submit" isLoading={isLoading} fullWidth>
+        Iniciar Sesión
+      </Button>
       {prevalidateData?.availableLoginMethods.includes('magic_link') && (
-        <Button variant="secondary" onClick={handleMagicLink} isLoading={isLoading} fullWidth>
+        <Button 
+          variant="secondary" 
+          onClick={handleMagicLink} 
+          isLoading={isLoading} 
+          fullWidth
+        >
           Envíame un enlace mágico
         </Button>
       )}
@@ -122,7 +174,7 @@ const LoginPage: React.FC = () => {
   const renderOtpForm = () => (
     <form onSubmit={handleOtpSubmit} className="space-y-6">
       <div className="text-center text-slate-300">
-          <p>Hemos enviado un código de seguridad a <strong>{email}</strong>.</p>
+        <p>Hemos enviado un código de seguridad a <strong>{email}</strong>.</p>
       </div>
       <Input 
         placeholder="Código de 6 dígitos"
@@ -133,15 +185,20 @@ const LoginPage: React.FC = () => {
         inputMode="numeric"
         maxLength={6}
       />
-      <Button type="submit" isLoading={isLoading} fullWidth>Verificar e Iniciar Sesión</Button>
+      <Button type="submit" isLoading={isLoading} fullWidth>
+        Verificar e Iniciar Sesión
+      </Button>
       <div className="text-center">
-          <button type="button" onClick={() => { setView('password'); setError('')}} className="text-sm font-medium text-sky-400 hover:text-sky-300">
-              Volver
-          </button>
+        <button 
+          type="button" 
+          onClick={() => { setView('password'); setError(''); }} 
+          className="text-sm font-medium text-sky-400 hover:text-sky-300"
+        >
+          Volver
+        </button>
       </div>
     </form>
   );
-
 
   return (
     <AuthLayout title="Iniciar Sesión">

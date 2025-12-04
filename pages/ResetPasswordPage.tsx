@@ -35,17 +35,25 @@ const ResetPasswordPage: React.FC = () => {
       setError('Las contraseñas no coinciden.');
       return;
     }
+    
+    if (newPassword.length < 8) {
+      setError('La contraseña debe tener al menos 8 caracteres.');
+      return;
+    }
+    
     if (!token || !email) {
       setError('Información incompleta. Por favor, inicia el proceso de nuevo desde la página de olvido de contraseña.');
       return;
     }
+    
     setIsLoading(true);
     setError('');
     setSuccess('');
+    
     try {
       await api.resetPassword({ email, token, newPassword });
       setSuccess('¡Contraseña restablecida con éxito! Redirigiendo al inicio de sesión...');
-      localStorage.removeItem('passwordResetEmail'); // Clean up
+      localStorage.removeItem('passwordResetEmail');
       setTimeout(() => navigate('/login'), 3000);
     } catch (err: any) {
       setError(err.message || 'No se pudo restablecer la contraseña. El enlace puede haber expirado.');
@@ -72,6 +80,18 @@ const ResetPasswordPage: React.FC = () => {
           autoComplete="new-password"
           disabled={isFormDisabled}
         />
+        
+        <div className="text-xs text-slate-400 space-y-1">
+          <p>La contraseña debe contener:</p>
+          <ul className="list-disc list-inside space-y-0.5 ml-2">
+            <li>Mínimo 8 caracteres</li>
+            <li>Al menos una letra mayúscula</li>
+            <li>Al menos una letra minúscula</li>
+            <li>Al menos un número</li>
+            <li>Al menos un carácter especial (!@#$%...)</li>
+          </ul>
+        </div>
+        
         <Input 
           placeholder="Confirmar Nueva Contraseña"
           id="confirmPassword" 
@@ -83,8 +103,13 @@ const ResetPasswordPage: React.FC = () => {
           disabled={isFormDisabled}
         />
         
-        <Button type="submit" isLoading={isLoading} fullWidth disabled={isFormDisabled}>
-            Restablecer Contraseña
+        <Button 
+          type="submit" 
+          isLoading={isLoading} 
+          fullWidth 
+          disabled={isFormDisabled}
+        >
+          Restablecer Contraseña
         </Button>
       </form>
     </AuthLayout>

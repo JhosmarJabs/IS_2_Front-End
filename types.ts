@@ -1,4 +1,3 @@
-
 export interface User {
   id: number;
   email: string;
@@ -21,7 +20,11 @@ export interface PrevalidateResponse {
   availableLoginMethods: ('password' | 'otp' | 'magic_link')[];
 }
 
-export interface GoogleLoginResponse extends AuthTokens {
+export interface GoogleLoginResponse {
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: string;
+  tokenType: string;
   isNewUser: boolean;
   user: User;
 }

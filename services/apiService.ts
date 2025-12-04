@@ -1,6 +1,7 @@
 import { User, AuthTokens, PrevalidateResponse, VerificationPurpose } from '../types';
 
-const API_BASE_URL = "https://is-2-back-end.onrender.com/api/auth";
+// Cambiar a tu URL del backend desplegado
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 interface StoredTokens {
     accessToken: string;
@@ -80,34 +81,29 @@ const decodeJwt = (token: string): any | null => {
 const mapJwtClaimsToUser = (claims: any): User | null => {
     if (!claims) return null;
 
-    // Prioritize standard claims, then check for Microsoft-specific long claim URIs
-    const userId = claims.id
-                 || claims.sub
+    // Mapeo de claims del backend .NET
+    const userId = claims["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"]
                  || claims.nameid
-                 || claims["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
+                 || claims.sub
+                 || claims.id;
 
-    const email = claims.email
-                || claims["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"];
+    const email = claims["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"]
+                || claims.email;
 
-    let nombre = claims.nombre
-               || claims.given_name
-               || claims["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname"];
+    const fullName = claims["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"]
+                   || claims.name;
 
-    let apellido = claims.apellido
-                 || claims.family_name
-                 || claims["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname"];
-
-    // Handle full name claim if individual parts are not present
-    if (!nombre) {
-        const fullName = claims.name || claims["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"];
-        if (fullName) {
-            const nameParts = fullName.split(' ');
-            nombre = nameParts[0];
-            apellido = nameParts.slice(1).join(' ');
-        }
+    // Dividir el nombre completo si existe
+    let nombre = '';
+    let apellido = '';
+    
+    if (fullName) {
+        const nameParts = fullName.split(' ');
+        nombre = nameParts[0] || '';
+        apellido = nameParts.slice(1).join(' ') || '';
     }
 
-    // Fallback for name if it's still missing, derive from email
+    // Fallback para nombre desde email
     if (!nombre && email) {
         const emailPrefix = email.split('@')[0];
         nombre = emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
@@ -117,16 +113,16 @@ const mapJwtClaimsToUser = (claims: any): User | null => {
         id: parseInt(userId, 10),
         email: email,
         nombre: nombre,
-        apellido: apellido || '',
+        apellido: apellido,
     };
 
     if (isNaN(user.id) || !user.email || !user.nombre) {
-        console.error("El token JWT no contiene los claims de usuario necesarios (id/sub/nameid, email, nombre/given_name/name).", claims);
+        console.error("El token JWT no contiene los claims necesarios.", claims);
         return null;
     }
+    
     return user;
 }
-
 
 export const createSessionFromTokens = (tokens: AuthTokens): { tokens: AuthTokens, user: User } => {
     if (!tokens?.accessToken) {
@@ -143,42 +139,105 @@ export const createSessionFromTokens = (tokens: AuthTokens): { tokens: AuthToken
     return { tokens, user };
 };
 
-export const register = (data: any) => apiFetch('/register', { method: 'POST', body: JSON.stringify(data) });
+// Registro
+export const register = (data: any) => 
+    apiFetch('/register', { method: 'POST', body: JSON.stringify(data) });
 
-export const prevalidate = (email: string): Promise<PrevalidateResponse> => apiFetch('/prevalidate', { method: 'POST', body: JSON.stringify({ email }) });
+// Prevalidación
+export const prevalidate = (email: string): Promise<PrevalidateResponse> => 
+    apiFetch('/prevalidate', { method: 'POST', body: JSON.stringify({ email }) });
 
-export const verifyToken = (email: string, token: string, purpose: VerificationPurpose) => apiFetch('/verify-token', { method: 'POST', body: JSON.stringify({ email, token, purpose }) });
+// Verificación de token genérico
+export const verifyToken = (email: string, token: string, purpose: VerificationPurpose) => 
+    apiFetch('/verify-token', { method: 'POST', body: JSON.stringify({ email, token, purpose }) });
 
-export const resendVerification = (email: string) => apiFetch('/resend-verification', { method: 'POST', body: JSON.stringify({ email }) });
+// Reenviar verificación
+export const resendVerification = (email: string) => 
+    apiFetch('/resend-verification', { method: 'POST', body: JSON.stringify({ email }) });
 
+// Refresh token
 export const refreshToken = async (refreshTokenValue: string): Promise<{ tokens: AuthTokens, user: User }> => {
-    const newTokens = await apiFetch('/refresh-token', { method: 'POST', body: JSON.stringify({ refreshToken: refreshTokenValue }) });
+    const newTokens = await apiFetch('/refresh-token', { 
+        method: 'POST', 
+        body: JSON.stringify({ refreshToken: refreshTokenValue }) 
+    });
     return createSessionFromTokens(newTokens);
 };
 
+// Login con password (sin MFA)
 export const loginWithPassword = async (data: any): Promise<{ tokens: AuthTokens, user: User }> => {
-    const tokens = await apiFetch('/login', { method: 'POST', body: JSON.stringify(data) });
+    const tokens = await apiFetch('/login/password', { 
+        method: 'POST', 
+        body: JSON.stringify(data) 
+    });
     return createSessionFromTokens(tokens);
 };
 
-export const requestOtpFor2FA = (data: any) => apiFetch('/login/password-request-otp', { method: 'POST', body: JSON.stringify(data) });
+// Solicitar OTP para MFA
+export const requestOtpFor2FA = (data: any) => 
+    apiFetch('/login/password-request-otp', { 
+        method: 'POST', 
+        body: JSON.stringify(data) 
+    });
 
+// Login con OTP
 export const loginWithOtp = async (data: any): Promise<{ tokens: AuthTokens, user: User }> => {
-    const tokens = await apiFetch('/login/otp', { method: 'POST', body: JSON.stringify(data) });
+    const tokens = await apiFetch('/login/otp', { 
+        method: 'POST', 
+        body: JSON.stringify(data) 
+    });
     return createSessionFromTokens(tokens);
 };
 
-export const requestMagicLink = (email: string) => apiFetch('/login/magic-request', { method: 'POST', body: JSON.stringify({ email }) });
+// Solicitar Magic Link
+export const requestMagicLink = (email: string) => 
+    apiFetch('/login/magic-request', { 
+        method: 'POST', 
+        body: JSON.stringify({ email }) 
+    });
 
+// Login con Magic Link
 export const loginWithMagicLink = async (token: string): Promise<{ tokens: AuthTokens, user: User }> => {
-    const tokens = await apiFetch('/login/magic', { method: 'POST', body: JSON.stringify({ token }) });
+    const tokens = await apiFetch('/login/magic', { 
+        method: 'POST', 
+        body: JSON.stringify({ token }) 
+    });
     return createSessionFromTokens(tokens);
 };
 
-export const loginWithGoogle = (idToken: string): Promise<{ tokens: AuthTokens, user: User }> => apiFetch('/oauth/google', { method: 'POST', body: JSON.stringify({ idToken }) });
+// OAuth Google
+export const loginWithGoogle = async (idToken: string): Promise<{ tokens: AuthTokens, user: User }> => {
+    const response = await apiFetch('/oauth/google', { 
+        method: 'POST', 
+        body: JSON.stringify({ idToken }) 
+    });
+    return {
+        tokens: {
+            accessToken: response.accessToken,
+            refreshToken: response.refreshToken,
+            expiresAt: response.expiresAt
+        },
+        user: response.user
+    };
+};
 
-export const requestPasswordReset = (email: string) => apiFetch('/request-reset', { method: 'POST', body: JSON.stringify({ email }) });
+// Solicitar reset de password
+export const requestPasswordReset = (email: string) => 
+    apiFetch('/request-reset', { 
+        method: 'POST', 
+        body: JSON.stringify({ email }) 
+    });
 
-export const resetPassword = (data: any) => apiFetch('/reset', { method: 'POST', body: JSON.stringify(data) });
+// Resetear password
+export const resetPassword = (data: any) => 
+    apiFetch('/reset', { 
+        method: 'POST', 
+        body: JSON.stringify(data) 
+    });
 
-export const revokeToken = (refreshTokenValue: string) => apiFetch('/revoke-token', { method: 'POST', body: JSON.stringify({ refreshToken: refreshTokenValue }) });
+// Revocar token (logout)
+export const revokeToken = (refreshTokenValue: string) => 
+    apiFetch('/revoke-token', { 
+        method: 'POST', 
+        body: JSON.stringify({ refreshToken: refreshTokenValue }) 
+    });
