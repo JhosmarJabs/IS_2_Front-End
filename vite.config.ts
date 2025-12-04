@@ -42,7 +42,7 @@ export default defineConfig(({ mode }) => {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         'process.env.REACT_APP_API_BASE_URL': JSON.stringify(
-          env.REACT_APP_API_BASE_URL || 'http://localhost:7256/api/auth'
+          env.REACT_APP_API_BASE_URL || 'https://is-2-back-end.onrender.com/api/auth'
         )
       },
       resolve: {
